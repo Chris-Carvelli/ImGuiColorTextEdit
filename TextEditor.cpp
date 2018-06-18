@@ -403,6 +403,72 @@ std::string TextEditor::GetWordAt(const Coordinates & aCoords) const
 	return r;
 }
 
+void TextEditor::NewLine(){
+	Coordinates at = GetCursorPosition();
+
+	if (at.mLine >= (int)mLines.size())
+		return;
+
+	auto& line = mLines[at.mLine];
+
+	if (at.mColumn > (int)line.size())
+		return;
+
+
+	EnterCharacter((char)'\n');
+	bool indentation = true;
+	std::vector<char> indent;
+	int level = 0;
+	for (int i=0;i<at.mColumn;i++){
+		if (indentation){
+			if (line[i].mChar == '\t'){
+				indent.push_back('\t');
+			} else if (line[i].mChar == ' '){
+				indent.push_back(' ');
+			} else {
+				indentation = false;
+			}
+		} else {
+			if (line[i].mChar == '{'){
+				level++;
+			} else if (line[i].mChar == '}'){
+				level--;
+			}
+		}
+	}
+	// adjust level
+	for (int i=0;i<std::abs(level);i++){
+		if (level<0){
+			auto res = std::find(indent.begin(),indent.end(),'\t');
+			if (res != indent.end()){
+				indent.erase(res);
+			} else {
+				int spaces = 4;
+				for (int j=indent.size()-1;j>=0 && spaces > 0;j--){
+					if (indent[j]==' '){
+						indent.erase(indent.begin()+j);
+						spaces--;
+					}
+				}
+			}
+		} else {
+			indent.insert(indent.begin(),'\t');
+		}
+	}
+	// insert indent
+	for (auto c:indent){
+		EnterCharacter(c);
+	}
+}
+namespace {
+	static bool IsKeyPressedMap(ImGuiKey key, bool repeat = true)
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		const int key_index = io.KeyMap[key];
+		return (key_index >= 0) ? ImGui::IsKeyPressed(key_index, repeat) : false;
+	}
+}
+
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
@@ -412,7 +478,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	auto xadv = (io.Fonts->Fonts[0]->IndexAdvanceX['X']);
 	mCharAdvance = ImVec2(io.FontGlobalScale * xadv, io.FontGlobalScale * io.Fonts->Fonts[0]->FontSize + mLineSpacing);
 
-	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoMove);
 
@@ -421,6 +487,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	auto shift = io.KeyShift;
 	auto ctrl = io.KeyCtrl;
 	auto alt = io.KeyAlt;
+	const bool is_shortcut_key_only = (io.OptMacOSXBehaviors ? (io.KeySuper && !io.KeyCtrl) : (io.KeyCtrl && !io.KeySuper)) && !io.KeyAlt && !io.KeyShift; // OS X style: Shortcuts using Cmd/Super instead of Ctrl
 
 	if (ImGui::IsWindowFocused())
 	{
@@ -431,15 +498,14 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		io.WantCaptureKeyboard = true;
 		io.WantTextInput = true;
 
-		if (!IsReadOnly() && ImGui::IsKeyPressed('Z'))
-			if (ctrl && !shift && !alt)
+		if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_Z))
 				Undo();
-		if (!IsReadOnly() && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
-			if (!ctrl && !shift && alt)
-				Undo();
-		if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed('Y'))
+		if (!IsReadOnly() && ctrl && shift &&  IsKeyPressedMap(ImGuiKey_Z))
 			Redo();
-
+		if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab)))
+			EnterCharacter((char)'\t');
+		if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+			NewLine();
 		if (!ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
 			MoveUp(1, shift);
 		else if (!ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
@@ -466,19 +532,15 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			BackSpace();
 		else if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(45))
 			mOverwrite ^= true;
-		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(45))
+		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_C))
 			Copy();
-		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed('C'))
+		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_Y))
 			Copy();
-		else if (!IsReadOnly() && !ctrl && shift && !alt && ImGui::IsKeyPressed(45))
+		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_V))
 			Paste();
-		else if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed('V'))
-			Paste();
-		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed('X'))
+		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_X))
 			Cut();
-		else if (!ctrl && shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Delete)))
-			Cut();
-		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A)))
+        else if (is_shortcut_key_only && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A)))
 			SelectAll();
 
 		if (!IsReadOnly())
@@ -488,7 +550,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				auto c = (unsigned char)io.InputCharacters[i];
 				if (c != 0)
 				{
-					if (isprint(c) || isspace(c))
+					if (isprint(c) || isspace(c) || c == '\t')
 					{
 						if (c == '\r')
 							c = '\n';
@@ -1871,16 +1933,31 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::GLSL()
 	if (!inited)
 	{
 		static const char* const keywords[] = {
-			"auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "register", "restrict", "return", "short",
-			"signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while", "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex", "_Generic", "_Imaginary",
-			"_Noreturn", "_Static_assert", "_Thread_local"
+				"attribute","const","uniform","varying","break","continue","do","for","while",
+				"if","else","in","out","inout","float","int","void","bool","true","false",
+				"lowp","mediump","highp","precision","invariant","discard","return","mat2","mat3",
+				"mat4","vec2","vec3","vec4","ivec2","ivec3","ivec4","bvec2","bvec3","bvec4","sampler2D",
+				"samplerCube","struct"
 		};
 		for (auto& k : keywords)
 			langDef.mKeywords.insert(k);
 
 		static const char* const identifiers[] = {
-			"abort", "abs", "acos", "asin", "atan", "atexit", "atof", "atoi", "atol", "ceil", "clock", "cosh", "ctime", "div", "exit", "fabs", "floor", "fmod", "getchar", "getenv", "isalnum", "isalpha", "isdigit", "isgraph",
-			"ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand", "strcat", "strcmp", "strerror", "time", "tolower", "toupper"
+				"radians","degrees","sin","cos","tan","asin","acos","atan","pow",
+				"exp","log","exp2","log2","sqrt","inversesqrt","abs","sign","floor","ceil","fract","mod",
+				"min","max","clamp","mix","step","smoothstep","length","distance","dot","cross",
+				"normalize","faceforward","reflect","refract","matrixCompMult","lessThan",
+				"lessThanEqual","greaterThan","greaterThanEqual","equal","notEqual","any","all",
+				"not","dFdx","dFdy","fwidth","texture2D","texture2DProj","texture2DLod",
+				"texture2DProjLod","textureCube","textureCubeLod",
+				"gl_MaxVertexAttribs","gl_MaxVertexUniformVectors","gl_MaxVaryingVectors",
+				"gl_MaxVertexTextureImageUnits","gl_MaxCombinedTextureImageUnits",
+				"gl_MaxTextureImageUnits","gl_MaxFragmentUniformVectors","gl_MaxDrawBuffers",
+				"gl_DepthRangeParameters","gl_DepthRange",
+				// The following two are only for MIME x-shader/x-vertex.
+				"gl_Position","gl_PointSize",
+				// The following five are only for MIME x-shader/x-fragment.
+				"gl_FragCoord","gl_FrontFacing","gl_PointCoord","gl_FragColor","gl_FragData"
 		};
 		for (auto& k : identifiers)
 		{
