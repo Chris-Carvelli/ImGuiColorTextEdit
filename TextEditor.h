@@ -36,6 +36,8 @@ public:
 		CurrentLineFill,
 		CurrentLineFillInactive,
 		CurrentLineEdge,
+		ErrorMarkerTitleColor,
+        ErrorMarkerBodyColor,
 		Max
 	};
 
@@ -225,6 +227,7 @@ public:
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
 
+	void setErrorMarkerColor(ImVec4 body, ImVec4 text);
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
 
