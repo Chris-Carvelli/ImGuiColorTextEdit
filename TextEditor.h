@@ -208,6 +208,9 @@ public:
 	void SelectAll();
 	bool HasSelection() const;
 
+	void SetAllowOverwrite(bool enable);
+	bool IsAllowOverwrite();
+
 	void Copy();
 	void Cut();
 	void Paste();
@@ -301,7 +304,8 @@ private:
 	EditorState mState;
 	UndoBuffer mUndoBuffer;
 	int mUndoIndex;
-	
+
+	bool mAllowOverwrite = false;
 	int mTabSize;
 	bool mOverwrite;
 	bool mReadOnly;

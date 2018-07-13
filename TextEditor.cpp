@@ -530,7 +530,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Delete();
 		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
 			BackSpace();
-		else if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(45))
+		else if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(45) && mAllowOverwrite)
 			mOverwrite ^= true;
 		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_C))
 			Copy();
@@ -1332,6 +1332,14 @@ void TextEditor::SelectAll()
 bool TextEditor::HasSelection() const
 {
 	return mState.mSelectionEnd > mState.mSelectionStart;
+}
+
+void TextEditor::SetAllowOverwrite(bool enable){
+	mAllowOverwrite = enable;
+}
+
+bool TextEditor::IsAllowOverwrite(){
+	return mAllowOverwrite;
 }
 
 void TextEditor::Copy()
