@@ -85,7 +85,7 @@ std::string TextEditor::GetText(const Coordinates & aStart, const Coordinates & 
 	std::string result;
 
 	int prevLineNo = aStart.mLine;
-	for (auto& it = aStart; it <= aEnd; Advance(it))
+	for (auto it = aStart; it <= aEnd; Advance(it))
 	{
 		if (prevLineNo != it.mLine && it.mLine < (int) mLines.size())
 			result.push_back('\n');
