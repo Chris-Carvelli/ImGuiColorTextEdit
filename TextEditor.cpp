@@ -64,7 +64,7 @@ void TextEditor::SetPalette(const Palette & aValue)
 	mPalette = aValue;
 }
 
-int TextEditor::AppendBuffer(std::string& aBuffer, char chr, int aIndex)
+int TextEditor::AppendBuffer(std::string& aBuffer, char chr, int aIndex) const
 {
 	if (chr != '\t')
 	{
@@ -555,7 +555,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 	if (ImGui::IsWindowHovered())
 	{
-		static float lastClick = -1.0f;
+		static double lastClick = -1.0f;
 		if (!shift && !alt)
 		{
 			auto click = ImGui::IsMouseClicked(0);
@@ -742,7 +742,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			if (!buffer.empty())
 			{
-				drawList->AddText(textScreenPos, mPalette[(uint8_t)prevColor], buffer.c_str());
+				drawList->AddText(textScreenPos, mPalette[(int)prevColor], buffer.c_str());
 				buffer.clear();
 			}
 			appendIndex = 0;
@@ -1330,7 +1330,7 @@ void TextEditor::SetAllowOverwrite(bool enable){
 	mAllowOverwrite = enable;
 }
 
-bool TextEditor::IsAllowOverwrite(){
+bool TextEditor::IsAllowOverwrite() const{
 	return mAllowOverwrite;
 }
 
@@ -1515,10 +1515,6 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 								 0xff000000, // ErrorMarkerBodyColor
 						 } };
 	return p;
-}
-
-void setErrorMarkerColor(ImVec4 body, ImVec4 text){
-
 }
 
 std::string TextEditor::GetText() const
@@ -1771,7 +1767,7 @@ TextEditor::UndoRecord::UndoRecord(
 	assert(mRemovedStart <= mRemovedEnd);
 }
 
-void TextEditor::UndoRecord::Undo(TextEditor * aEditor)
+void TextEditor::UndoRecord::Undo(TextEditor * aEditor) const
 {
 	if (!mAdded.empty())
 	{
@@ -1791,7 +1787,7 @@ void TextEditor::UndoRecord::Undo(TextEditor * aEditor)
 
 }
 
-void TextEditor::UndoRecord::Redo(TextEditor * aEditor)
+void TextEditor::UndoRecord::Redo(TextEditor * aEditor) const
 {
 	if (!mRemoved.empty())
 	{

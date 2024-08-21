@@ -13,7 +13,7 @@
 class TextEditor
 {
 public:
-	enum class PaletteIndex
+	enum class PaletteIndex : int
 	{
 		Default,
 		Keyword,
@@ -153,7 +153,7 @@ public:
 
 		TokenRegexStrings mTokenRegexStrings;
 
-		bool mCaseSensitive;
+		bool mCaseSensitive = true;
 
 		static LanguageDefinition CPlusPlus();
 		static LanguageDefinition HLSL();
@@ -211,7 +211,7 @@ public:
 	bool HasSelection() const;
 
 	void SetAllowOverwrite(bool enable);
-	bool IsAllowOverwrite();
+	bool IsAllowOverwrite() const;
 
 	void Copy();
 	void Cut();
@@ -226,8 +226,6 @@ public:
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
-
-	void setErrorMarkerColor(ImVec4 body, ImVec4 text);
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
 
@@ -256,8 +254,8 @@ private:
 			TextEditor::EditorState& aBefore, 
 			TextEditor::EditorState& aAfter);
 
-		void Undo(TextEditor* aEditor);
-		void Redo(TextEditor* aEditor);
+		void Undo(TextEditor* aEditor) const;
+		void Redo(TextEditor* aEditor) const;
 
 		std::string mAdded;
 		Coordinates mAddedStart;
@@ -280,7 +278,7 @@ private:
 	int TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
 	int GetPageSize() const;
-	int AppendBuffer(std::string& aBuffer, char chr, int aIndex);
+	int AppendBuffer(std::string& aBuffer, char chr, int aIndex) const;
 	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
 	Coordinates GetActualCursorCoordinates() const;
 	Coordinates SanitizeCoordinates(const Coordinates& aValue) const;
