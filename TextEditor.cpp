@@ -460,14 +460,6 @@ void TextEditor::NewLine(){
 		EnterCharacter(c);
 	}
 }
-namespace {
-	static bool IsKeyPressedMap(ImGuiKey key, bool repeat = true)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		const int key_index = io.KeyMap[key];
-		return (key_index >= 0) ? ImGui::IsKeyPressed(key_index, repeat) : false;
-	}
-}
 
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
@@ -498,9 +490,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		io.WantCaptureKeyboard = true;
 		io.WantTextInput = true;
 
-		if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_Z))
+		if (!IsReadOnly() && is_shortcut_key_only && ImGui::IsKeyPressed(ImGuiKey_Z))
 			Undo();
-		if (!IsReadOnly() && ctrl && shift &&  IsKeyPressedMap(ImGuiKey_Z))
+		if (!IsReadOnly() && ctrl && shift && ImGui::IsKeyPressed(ImGuiKey_Z))
 			Redo();
 		if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab)))
 			EnterCharacter((char)'\t');
@@ -530,24 +522,24 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Delete();
 		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
 			BackSpace();
-		else if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(45) && mAllowOverwrite)
+		else if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_Insert) && mAllowOverwrite)
 			mOverwrite ^= true;
-		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_C))
+		else if (!IsReadOnly() && is_shortcut_key_only && ImGui::IsKeyPressed(ImGuiKey_C))
 			Copy();
-		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_Y))
+		else if (!IsReadOnly() && is_shortcut_key_only && ImGui::IsKeyPressed(ImGuiKey_Y))
 			Copy();
-		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_V))
+		else if (!IsReadOnly() && is_shortcut_key_only && ImGui::IsKeyPressed(ImGuiKey_V))
 			Paste();
-		else if (!IsReadOnly() && is_shortcut_key_only && IsKeyPressedMap(ImGuiKey_X))
+		else if (!IsReadOnly() && is_shortcut_key_only && ImGui::IsKeyPressed(ImGuiKey_X))
 			Cut();
 		else if (is_shortcut_key_only && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A)))
 			SelectAll();
 
 		if (!IsReadOnly())
 		{
-			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
+			for (size_t i = 0; i < sizeof(io.InputQueueCharacters) / sizeof(io.InputQueueCharacters[0]); i++)
 			{
-				auto c = (unsigned char)io.InputCharacters[i];
+				auto c = (unsigned char)io.InputQueueCharacters[i];
 				if (c != 0)
 				{
 					if (isprint(c) || isspace(c) || c == '\t')
