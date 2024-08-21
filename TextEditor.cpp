@@ -85,7 +85,7 @@ std::string TextEditor::GetText(const Coordinates & aStart, const Coordinates & 
 	std::string result;
 
 	int prevLineNo = aStart.mLine;
-	for (auto it = aStart; it <= aEnd; Advance(it))
+	for (auto& it = aStart; it <= aEnd; Advance(it))
 	{
 		if (prevLineNo != it.mLine && it.mLine < (int) mLines.size())
 			result.push_back('\n');
@@ -938,8 +938,8 @@ void TextEditor::InsertText(const char * aValue)
 	if (aValue == nullptr)
 		return;
 
-	auto pos = GetActualCursorCoordinates();
-	auto start = std::min(pos, mState.mSelectionStart);
+	auto& pos = GetActualCursorCoordinates();
+	auto& start = std::min(pos, mState.mSelectionStart);
 	int totalLines = pos.mLine - start.mLine;
 
 	totalLines += InsertTextAt(pos, aValue);
@@ -1553,7 +1553,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 		bool preproc = false;
 		auto& line = mLines[i];
 		buffer.clear();
-		for (auto g : mLines[i])
+		for (auto& g : mLines[i])
 		{
 			buffer.push_back(g.mChar);
 			g.mColorIndex = PaletteIndex::Default;
@@ -1567,7 +1567,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 			{
 				if (std::regex_search<std::string::const_iterator>(first, last, results, p.first, std::regex_constants::match_continuous))
 				{
-					auto v = *results.begin();
+					auto& v = *results.begin();
 					auto start = v.first - buffer.begin();
 					auto end = v.second - buffer.begin();
 					auto id = buffer.substr(start, end - start);
@@ -1623,7 +1623,7 @@ void TextEditor::ColorizeInternal()
 			auto& line = mLines[i.mLine];
 			if (!line.empty())
 			{
-				auto g = line[i.mColumn];
+				auto& g = line[i.mColumn];
 				auto c = g.mChar;
 
 				bool inComment = commentStart <= i;
